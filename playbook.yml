@@ -1,0 +1,22 @@
+---
+- name: Configure web server
+  hosts: system
+  become: true
+  tasks:
+  - block:
+    - parted: device=/dev/sdb unit=MiB
+      register: sdb_info 
+
+
+    - name: Include test
+      include_tasks: test1.yml
+      when: ( sdb_info.disk.size|int > 3072 ) and ( sdb_info.disk.size|int < 5120 )
+       #  - (ansible_devices['sdb']['size']|int >= 3072) and (ansible_devices['sdb']['size']|int <= 5120)
+       #  - ansible_devices.sdb is defined
+      ignore_errors: yes
+ 
+    - name: Include test2
+      include_tasks: test2.yml
+      when: ( sdb_info.disk.size|int > 5120 ) and ( sdb_info.disk.size|int < 7200 )
+        # - (ansible_devices['sdb']['size']|int > 5120) and (ansible_devices['sdb']['size']|int <= 7200)
+       # - ansible_devices.sdb is defined

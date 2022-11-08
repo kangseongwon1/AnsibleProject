@@ -1,0 +1,74 @@
+    - name: parted /dev/sdb task1
+      parted:
+        device: /dev/sdb
+        number: 1
+        state: present
+        part_end: 3GiB
+    - name: parted /dev/sdb task2
+      parted:
+        device: /dev/sdb
+        number: 2
+        flags: [ lvm ]
+        state: present
+        part_start: 3GiB
+
+    - name: task for creating volume group
+      lvg:
+        vg: vg1
+        pvs: /dev/sdb1,/dev/sdb2
+
+    - name: task for creating logical group
+      lvol:
+        vg: vg1
+        lv: lv1
+        size: 3072
+    - name: logical group2
+      lvol:
+        vg: vg1
+        lv: lv2
+        size: 100%FREE
+      ignore_errors: yes
+
+
+#      loop:      
+#      - lv_name: lv1 
+#        lv_size: +3g
+#      - lv_name: lv2 
+#        lv_size: 100%FREE 
+##
+    - name: Filesystem config
+      filesystem:
+        fstype: ext4
+        dev: "{{ item }}"
+      loop:
+        - /dev/vg1/lv1
+        - /dev/vg1/lv2
+    
+    - name: mkdir mount dir
+      file:
+        path: "{{ item }}"
+        state: directory
+      loop:
+        - /mnt/home1
+        - /mnt/home2
+        - /mnt/home3
+        - /mnt/home4
+
+    - name: mount parted file
+      mount:
+        path: "{{ item.mount_path }}"
+        src: "{{ item.mount_src  }}"
+        fstype: "{{ item.mount_fstype }}"
+        state: mounted
+      loop:
+      - mount_path: /mnt/home3
+        mount_src: /dev/vg1/lv1
+        mount_fstype: ext4
+      - mount_path: /mnt/home4
+        mount_src: /dev/vg1/lv2
+        mount_fstype: ext4
+
+#  when: > 
+#    ansible_devices.sdb.size|int <= 7168 and 
+#    ansible_devices.sdb.size|int > 5120
+#

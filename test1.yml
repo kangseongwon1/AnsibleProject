@@ -1,0 +1,51 @@
+      - name: disk parted 3G ~5G
+        parted: 
+          device: /dev/sdb
+          number: 1
+          part_end: 2GiB
+          state: present
+      - name: parted /dev/sdb task2
+        parted: 
+          device: /dev/sdb
+          number: 2
+          flags: [ lvm ]
+          part_start: 2GiB
+          state: present
+      - name: Filesystem config
+        filesystem:
+          fstype: "{{ item.fs }}"
+          dev: "{{ item.file_dev }}"
+        loop:
+          - fs: xfs
+            file_dev: /dev/sdb1
+          - fs: ext4
+            file_dev: /dev/sdb2
+        ignore_errors: yes
+      - name: mkdir mount dir
+        file:
+          path: "{{ item }}"
+          state: directory
+        loop:
+          - /mnt/home1
+          - /mnt/home2
+          - /mnt/home3
+          - /mnt/home4
+
+
+      - name: mount 2g parted file
+        mount:
+          path: "{{ item.mount_path }}"
+          src: "{{ item.mount_src  }}"
+          fstype: "{{ item.mount_fstype }}"
+          state: mounted
+        loop:
+        - mount_path: /mnt/home1
+          mount_src: /dev/sdb1
+          mount_fstype: xfs
+        - mount_path: /mnt/home2
+          mount_src: /dev/sdb2
+          mount_fstype: ext4
+
+#    when: 
+#      - ansible_facts['devices']['sdb']['size']|int > 1024 
+#      - ansible_facts['devices']['sdb']['size']|int < 3500 
